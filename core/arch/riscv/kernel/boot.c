@@ -15,6 +15,7 @@
 #include <kernel/misc.h>
 #include <kernel/panic.h>
 #include <kernel/thread.h>
+#include <libfdt.h>
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
 #include <mm/tee_mm.h>
@@ -34,6 +35,38 @@ unsigned long boot_args[4];
 uint32_t sem_cpu_sync[CFG_TEE_CORE_NB_CORE];
 
 #if defined(CFG_DT)
+static int add_optee_dt_node(struct dt_descriptor *dt)
+{
+	int offs;
+	int ret;
+
+	if (fdt_path_offset(dt->blob, "/firmware/optee") >= 0) {
+		DMSG("OP-TEE Device Tree node already exists!");
+		return 0;
+	}
+
+	offs = fdt_path_offset(dt->blob, "/firmware");
+	if (offs < 0) {
+		offs = add_dt_path_subnode(dt, "/", "firmware");
+		if (offs < 0)
+			return -1;
+	}
+
+	offs = fdt_add_subnode(dt->blob, offs, "optee");
+	if (offs < 0)
+		return -1;
+
+	ret = fdt_setprop_string(dt->blob, offs, "compatible",
+				 "linaro,optee-tz");
+	if (ret < 0)
+		return -1;
+	ret = fdt_setprop_string(dt->blob, offs, "method", "smc");
+	if (ret < 0)
+		return -1;
+
+	return 0;
+}
+
 static int mark_tddram_as_reserved(struct dt_descriptor *dt)
 {
 	return add_res_mem_dt_node(dt, "optee_core", CFG_TDDRAM_START,
@@ -46,6 +79,9 @@ static void update_external_dt(void)
 
 	if (!dt || !dt->blob)
 		return;
+
+	if (add_optee_dt_node(dt))
+		panic("Failed to add OP-TEE Device Tree node");
 
 #ifdef CFG_CORE_RESERVED_SHM
 	if (mark_static_shm_as_reserved(dt))
