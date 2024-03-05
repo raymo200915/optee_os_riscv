@@ -95,6 +95,10 @@ DEFINES
 	DEFINE(THREAD_SCALL_REG_IE, offsetof(struct thread_scall_regs, ie));
 	DEFINE(THREAD_SCALL_REGS_SIZE, sizeof(struct thread_scall_regs));
 
+	/* struct thread_mpxy_args */
+	DEFINE(THREAD_MPXY_ARGS_A0, offsetof(struct thread_mpxy_args, a0));
+	DEFINE(THREAD_MPXY_ARGS_SIZE, sizeof(struct thread_mpxy_args));
+
 	/* struct core_mmu_config */
 	DEFINE(CORE_MMU_CONFIG_SIZE, sizeof(struct core_mmu_config));
 	DEFINE(CORE_MMU_CONFIG_SATP,

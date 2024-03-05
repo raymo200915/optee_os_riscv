@@ -143,6 +143,10 @@ void boot_init_primary_late(unsigned long fdt,
 	discover_nsec_memory();
 	update_external_dt();
 
+#ifdef CFG_RISCV_S_MODE
+	mpxy_opteed_init();
+#endif
+
 	IMSG("OP-TEE version: %s", core_v_str);
 	if (IS_ENABLED(CFG_INSECURE)) {
 		IMSG("WARNING: This OP-TEE configuration might be insecure!");
@@ -162,6 +166,7 @@ void boot_init_primary_late(unsigned long fdt,
 static void init_secondary_helper(unsigned long nsec_entry)
 {
 	size_t pos = get_core_pos();
+	int rc = 0;
 
 	IMSG("Secondary CPU %zu initializing", pos);
 
@@ -177,7 +182,9 @@ static void init_secondary_helper(unsigned long nsec_entry)
 	thread_init_per_cpu();
 	init_sec_mon(nsec_entry);
 	boot_secondary_init_intc();
-
+	rc = sbi_mpxy_setup_shmem(get_core_pos());
+	if (rc)
+		panic("Failed to setup MPXY shared memory");
 	IMSG("Secondary CPU %zu initialized", pos);
 }
 

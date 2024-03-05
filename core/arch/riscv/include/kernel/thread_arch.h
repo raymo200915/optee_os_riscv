@@ -164,6 +164,17 @@ struct thread_ctx_regs {
 	unsigned long ie;
 };
 
+struct thread_mpxy_args {
+	unsigned long a0;	/* Channel ID */
+	unsigned long a1;	/* Message ID */
+	unsigned long a2;	/* Message data length */
+	unsigned long a3;	/* Not used */
+	unsigned long a4;	/* Not used */
+	unsigned long a5;	/* Not used */
+	unsigned long a6;	/* MPXY #FID */
+	unsigned long a7;	/* MPXY #EID */
+};
+
 struct user_mode_ctx;
 
 #ifdef CFG_WITH_VFP
