@@ -47,7 +47,7 @@ FUNC thread_std_abi_entry , :
 	mv	s0, a0
 
 	/* Disable all interrupts */
-	csrc	CSR_XSTATUS, CSR_XSTATUS_IE
+	csrw	CSR_XIE, x0
 
 	/* Switch to temporary stack */
 	jal	thread_get_tmp_sp
