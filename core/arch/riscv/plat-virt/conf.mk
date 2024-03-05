@@ -21,7 +21,7 @@ $(call force,CFG_CORE_SANITIZE_KADDRESS,n)
 # Hart-related flags
 CFG_TEE_CORE_NB_CORE ?= 1
 CFG_NUM_THREADS ?= 1
-$(call force,CFG_BOOT_SYNC_CPU,y)
+$(call force,CFG_BOOT_SYNC_CPU,n)
 
 # RISC-V-specific flags
 rv64-platform-isa ?= rv64imafdc_zicsr_zifencei
