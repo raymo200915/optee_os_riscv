@@ -723,7 +723,8 @@ FUNC thread_foreign_interrupt_handler , :
 	mv	a4, a0
 	li	a0, TEEABI_OPTEED_RETURN_CALL_DONE
 	li	a1, OPTEE_ABI_RETURN_RPC_FOREIGN_INTR
-	mv	a2, x0
-	mv	a3, x0
+	mv	a2, zero
+	mv	a3, zero
+	mv	a5, zero
 	j	thread_return_to_udomain
 END_FUNC thread_foreign_interrupt_handler

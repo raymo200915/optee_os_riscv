@@ -65,6 +65,7 @@ FUNC thread_std_abi_entry , :
 	li	a3, 0
 	li	a4, 0
 	li	a0, TEEABI_OPTEED_RETURN_CALL_DONE
+	mv	a5, zero
 
 	/* Return to untrusted domain */
 	jal	thread_return_to_udomain
@@ -127,6 +128,7 @@ FUNC thread_rpc_xstatus , :
 	mv	a2, s3	/* rv[1] */
 	mv	a3, s4	/* rv[2] */
 	li	a0, TEEABI_OPTEED_RETURN_CALL_DONE
+	mv	a5, zero
 
 	/* Return to untrusted domain */
 	jal	thread_return_to_udomain
@@ -172,6 +174,7 @@ LOCAL_FUNC vector_std_abi_entry, : , .identity_map
 	li	a3, 0
 	li	a4, 0
 	li	a0, TEEABI_OPTEED_RETURN_CALL_DONE
+	mv	a5, zero
 
 	/* Return to untrusted domain */
 	j	thread_return_to_udomain
@@ -195,6 +198,11 @@ LOCAL_FUNC vector_fiq_entry , : , .identity_map
 	jal	interrupt_main_handler
 
 	li	a0, TEEABI_OPTEED_RETURN_FIQ_DONE
+	mv	a1, zero
+	mv	a2, zero
+	mv	a3, zero
+	mv	a4, zero
+	mv	a5, zero
 	/* Return to untrusted domain */
 	j	thread_return_to_udomain
 END_FUNC vector_fiq_entry

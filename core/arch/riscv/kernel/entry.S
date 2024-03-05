@@ -242,6 +242,10 @@ UNWIND(	.cantunwind)
 
 	li	a0, TEEABI_OPTEED_RETURN_ENTRY_DONE
 	la	a1, thread_vector_table
+	mv	a2, zero
+	mv	a3, zero
+	mv	a4, zero
+	mv	a5, zero
 	j	thread_return_to_udomain
 END_FUNC reset_primary
 
@@ -258,6 +262,11 @@ UNWIND(	.cantunwind)
 #ifdef CFG_RISCV_WITH_M_MODE_SM
 	/* Return to untrusted domain */
 	li	a0, TEEABI_OPTEED_RETURN_ON_DONE
+	mv	a1, zero
+	mv	a2, zero
+	mv	a3, zero
+	mv	a4, zero
+	mv	a5, zero
 	j	thread_return_to_udomain
 #endif
 	j	.
