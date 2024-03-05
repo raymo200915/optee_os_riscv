@@ -50,15 +50,13 @@ out:
 	assert(thread_get_exceptions() == THREAD_EXCP_ALL);
 }
 
-uint32_t thread_handle_std_abi(uint32_t a0, uint32_t a1, uint32_t a2,
-			       uint32_t a3, uint32_t a4, uint32_t a5,
-			       uint32_t a6 __unused, uint32_t a7 __maybe_unused)
+uint32_t thread_handle_std_abi(struct thread_abi_args *args)
 {
 	uint32_t rv = OPTEE_ABI_RETURN_OK;
 
 	thread_check_canaries();
 
-	if (IS_ENABLED(CFG_NS_VIRTUALIZATION) && virt_set_guest(a7))
+	if (IS_ENABLED(CFG_NS_VIRTUALIZATION) && virt_set_guest(args->a7))
 		return OPTEE_ABI_RETURN_ENOTAVAIL;
 
 	/*
@@ -66,11 +64,13 @@ uint32_t thread_handle_std_abi(uint32_t a0, uint32_t a1, uint32_t a2,
 	 * on error. Successful return is done via thread_exit() or
 	 * thread_rpc().
 	 */
-	if (a0 == OPTEE_ABI_CALL_RETURN_FROM_RPC) {
-		thread_resume_from_rpc(a3, a1, a2, a4, a5);
+	if (args->a0 == OPTEE_ABI_CALL_RETURN_FROM_RPC) {
+		thread_resume_from_rpc(args->a3, args->a1, args->a2, args->a4,
+				       args->a5);
 		rv = OPTEE_ABI_RETURN_ERESUME;
 	} else {
-		thread_alloc_and_run(a0, a1, a2, a3, 0, 0);
+		thread_alloc_and_run(args->a0, args->a1, args->a2, args->a3,
+				     0, 0);
 		rv = OPTEE_ABI_RETURN_ETHREAD_LIMIT;
 	}
 

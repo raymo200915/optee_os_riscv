@@ -30,9 +30,7 @@
 FUNC thread_return_to_udomain , :
 	/* Caller should provide arguments in a0~a5 */
 #if defined(CFG_RISCV_WITH_M_MODE_SM)
-	li	a7, SBI_EXT_TEE		/* extension ID */
-	li	a6, 0			/* function ID (unused) */
-	ecall
+	jal	thread_return_to_udomain_by_mpxy
 #else
 	/* Other protocol */
 #endif
@@ -161,6 +159,7 @@ END_FUNC thread_rpc_xstatus
 DECLARE_KEEP_PAGER thread_rpc_xstatus
 
 LOCAL_FUNC vector_std_abi_entry, : , .identity_map
+	jal	sbi_mpxy_get_shmem
 	jal	thread_handle_std_abi
 	/*
 	 * Normally thread_handle_std_abi() should return via
@@ -181,6 +180,17 @@ LOCAL_FUNC vector_std_abi_entry, : , .identity_map
 END_FUNC vector_std_abi_entry
 
 LOCAL_FUNC vector_fast_abi_entry , : , .identity_map
+	jal	sbi_mpxy_get_shmem
+	mv	t0, a0
+	ld	a0, 0(t0)
+	ld	a1, 8(t0)
+	ld	a2, 16(t0)
+	ld	a3, 24(t0)
+	ld	a4, 32(t0)
+	ld	a5, 40(t0)
+	ld	a6, 48(t0)
+	ld	a7, 56(t0)
+
 	addi    sp, sp, -THREAD_ABI_ARGS_SIZE
 	store_xregs sp, THREAD_ABI_ARGS_A0, REG_A0, REG_A7
 	mv      a0, sp
