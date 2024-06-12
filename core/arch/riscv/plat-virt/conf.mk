@@ -1,4 +1,5 @@
 $(call force,CFG_RV64_core,y)
+$(call force,CFG_WITH_RISCV_RVC,y)
 
 $(call force,CFG_CORE_LARGE_PHYS_ADDR,y)
 $(call force,CFG_TEE_CORE_DEBUG,n)
@@ -22,9 +23,6 @@ $(call force,CFG_CORE_SANITIZE_KADDRESS,n)
 CFG_TEE_CORE_NB_CORE ?= 1
 CFG_NUM_THREADS ?= 1
 $(call force,CFG_BOOT_SYNC_CPU,n)
-
-# RISC-V-specific flags
-rv64-platform-isa ?= rv64imafdc_zicsr_zifencei
 
 $(call force,CFG_RISCV_M_MODE,n)
 $(call force,CFG_RISCV_S_MODE,y)
