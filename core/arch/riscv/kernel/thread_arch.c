@@ -146,13 +146,13 @@ void thread_interrupt_handler(unsigned long cause, struct thread_ctx_regs *regs)
 {
 	switch (cause & LONG_MAX) {
 	case IRQ_XTIMER:
-		clear_csr(CSR_XIE, CSR_XIE_TIE);
+		thread_foreign_interrupt_handler(regs);
 		break;
 	case IRQ_XSOFT:
-		thread_unhandled_trap(cause, regs);
+		thread_foreign_interrupt_handler(regs);
 		break;
 	case IRQ_XEXT:
-		thread_irq_handler();
+		thread_foreign_interrupt_handler(regs);
 		break;
 	default:
 		thread_unhandled_trap(cause, regs);
