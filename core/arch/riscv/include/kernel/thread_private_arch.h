@@ -119,6 +119,7 @@ void thread_exit_user_mode(unsigned long a0, unsigned long a1,
 			   unsigned long a2, unsigned long a3,
 			   unsigned long sp, unsigned long pc,
 			   unsigned long status);
+void thread_foreign_interrupt_handler(struct thread_trap_regs *regs, bool user);
 
 #endif /*__ASSEMBLER__*/
 #endif /*__KERNEL_THREAD_PRIVATE_ARCH_H*/
