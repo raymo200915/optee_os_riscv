@@ -307,10 +307,12 @@ static bool is_user_mode(struct thread_ctx_regs *regs)
 
 vaddr_t thread_get_saved_thread_sp(void)
 {
+	uint32_t exceptions = thread_mask_exceptions(THREAD_EXCP_ALL);
 	struct thread_core_local *l = thread_get_core_local();
 	int ct = l->curr_thread;
 
 	assert(ct != THREAD_ID_INVALID);
+	thread_unmask_exceptions(exceptions);
 	return threads[ct].kern_sp;
 }
 
