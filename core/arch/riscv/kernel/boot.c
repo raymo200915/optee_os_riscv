@@ -229,7 +229,10 @@ void __weak boot_init_primary_runtime(void)
 	/* The primary CPU is always indexed by 0 */
 	assert(pos == 0);
 
-	thread_init_primary();
+#ifdef CFG_RISCV_S_MODE
+	boot_primary_init_sbi_mpxy();
+#endif
+
 	IMSG("OP-TEE version: %s", core_v_str);
 	if (IS_ENABLED(CFG_INSECURE)) {
 		IMSG("WARNING: This OP-TEE configuration might be insecure!");
@@ -279,6 +282,9 @@ static void init_secondary_helper(void)
 
 	thread_init_per_cpu();
 	boot_secondary_init_intc();
+#ifdef CFG_RISCV_S_MODE
+	boot_secondary_init_sbi_mpxy();
+#endif
 
 	IMSG("Secondary CPU%zu (hart%"PRIu32") initialized",
 	     pos, thread_get_hartid_by_hartindex(pos));

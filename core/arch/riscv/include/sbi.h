@@ -24,7 +24,7 @@
 #define SBI_EXT_BASE			0x10
 #define SBI_EXT_HSM			0x48534D
 #define SBI_EXT_DBCN			0x4442434E
-#define SBI_EXT_TEE			0x544545
+#define SBI_EXT_MPXY			0x4D505859
 
 #ifndef __ASSEMBLER__
 
@@ -50,6 +50,18 @@ struct sbiret {
 })
 
 #define sbi_ecall(...)	_sbi_ecall(__VA_ARGS__, 0, 0, 0, 0, 0, 0, 0)
+
+/* SBI arguments */
+struct sbi_args {
+	unsigned long a0;
+	unsigned long a1;
+	unsigned long a2;
+	unsigned long a3;
+	unsigned long a4;
+	unsigned long a5;
+	unsigned long a6;
+	unsigned long a7;
+};
 
 /* SBI function IDs for Base extension */
 enum sbi_ext_base_fid {
@@ -87,6 +99,47 @@ enum sbi_hsm_hart_state {
 	SBI_HSM_STATE_RESUME_PENDING,
 };
 
+enum sbi_ext_mpxy_fid {
+	SBI_EXT_MPXY_GET_SHMEM_SIZE,
+	SBI_EXT_MPXY_SET_SHMEM,
+	SBI_EXT_MPXY_GET_CHANNEL_IDS,
+	SBI_EXT_MPXY_READ_ATTRS,
+	SBI_EXT_MPXY_WRITE_ATTRS,
+	SBI_EXT_MPXY_SEND_MSG_WITH_RESP,
+	SBI_EXT_MPXY_SEND_MSG_WITHOUT_RESP,
+	SBI_EXT_MPXY_GET_NOTIFICATION_EVENTS,
+};
+
+enum sbi_mpxy_attribute_id {
+	/* Standard channel attributes managed by MPXY framework */
+	SBI_MPXY_ATTR_MSG_PROT_ID		= 0x00000000,
+	SBI_MPXY_ATTR_MSG_PROT_VER		= 0x00000001,
+	SBI_MPXY_ATTR_MSG_MAX_LEN		= 0x00000002,
+	SBI_MPXY_ATTR_MSG_SEND_TIMEOUT		= 0x00000003,
+	SBI_MPXY_ATTR_MSG_COMPLETION_TIMEOUT	= 0x00000004,
+	SBI_MPXY_ATTR_CHANNEL_CAPABILITY	= 0x00000005,
+	SBI_MPXY_ATTR_SSE_EVENT_ID		= 0x00000006,
+	SBI_MPXY_ATTR_MSI_CONTROL		= 0x00000007,
+	SBI_MPXY_ATTR_MSI_ADDR_LO		= 0x00000008,
+	SBI_MPXY_ATTR_MSI_ADDR_HI		= 0x00000009,
+	SBI_MPXY_ATTR_MSI_DATA			= 0x0000000A,
+	SBI_MPXY_ATTR_EVENTS_STATE_CONTROL	= 0x0000000B,
+	SBI_MPXY_ATTR_STD_ATTR_MAX_IDX,
+	/*
+	 * Message protocol specific attributes, managed by
+	 * the message protocol specification.
+	 */
+	SBI_MPXY_ATTR_MSGPROTO_ATTR_START	= 0x80000000,
+	SBI_MPXY_ATTR_MSGPROTO_ATTR_END		= 0xffffffff
+};
+
+/**
+ * SBI MPXY Message Protocol IDs
+ */
+enum sbi_mpxy_msgproto_id {
+	SBI_MPXY_MSGPROTO_RPMI_ID = 0x0,
+};
+
 #include <compiler.h>
 #include <encoding.h>
 #include <stdint.h>
@@ -99,6 +152,14 @@ void sbi_console_putchar(int ch);
 int sbi_dbcn_write_byte(unsigned char ch);
 int sbi_hsm_hart_start(uint32_t hartid, paddr_t start_addr, unsigned long arg);
 int sbi_hsm_hart_get_status(uint32_t hartid, enum sbi_hsm_hart_state *status);
+void thread_return_to_udomain_by_sbi_mpxy(unsigned long arg0,
+					  unsigned long arg1,
+					  unsigned long arg2,
+					  unsigned long arg3,
+					  unsigned long arg4,
+					  unsigned long arg5 __unused);
+void boot_primary_init_sbi_mpxy(void);
+void boot_secondary_init_sbi_mpxy(void);
 
 #endif /*__ASSEMBLER__*/
 #endif /*defined(CFG_RISCV_SBI)*/
