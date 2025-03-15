@@ -21,6 +21,7 @@
 #include <mm/tee_pager.h>
 #include <platform_config.h>
 #include <riscv.h>
+#include <rng_support.h>
 #include <sbi.h>
 #include <stdio.h>
 #include <trace.h>
@@ -152,6 +153,10 @@ void boot_init_primary_late(unsigned long fdt,
 		IMSG("WARNING: Please check https://optee.readthedocs.io/en/latest/architecture/porting_guidelines.html");
 	}
 	IMSG("Primary CPU initializing");
+#ifdef CFG_CORE_ASLR
+	DMSG("Executing at offset %#lx with virtual load address %#"PRIxVA,
+	     (unsigned long)boot_mmu_config.map_offset, VCORE_START_VA);
+#endif
 	boot_primary_init_intc();
 	init_tee_runtime();
 	call_finalcalls();
@@ -191,3 +196,30 @@ void boot_init_secondary(unsigned long nsec_entry __unused)
 {
 	init_secondary_helper(PADDR_INVALID);
 }
+
+#if defined(CFG_CORE_ASLR)
+/* May be overridden in plat-$(PLATFORM)/main.c */
+__weak unsigned long plat_get_aslr_seed(void)
+{
+	return 0;
+}
+
+__weak unsigned long get_aslr_seed(void)
+{
+	TEE_Result res = TEE_SUCCESS;
+	unsigned long seed = 0;
+
+	if (IS_ENABLED(CFG_RISCV_ZKR_RNG) && riscv_detect_csr_seed()) {
+		res = hw_get_random_bytes(&seed, sizeof(seed));
+		if (res) {
+			DMSG("Zkr: Failed to seed ASLR");
+			goto out;
+		}
+		return seed;
+	}
+
+out:
+	/* Try platform implementation */
+	return plat_get_aslr_seed();
+}
+#endif /*CFG_CORE_ASLR*/
