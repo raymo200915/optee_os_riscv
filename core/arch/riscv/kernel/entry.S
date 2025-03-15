@@ -7,6 +7,7 @@
 #include <asm.S>
 #include <generated/asm-defines.h>
 #include <keep.h>
+#include <kernel/riscv_elf.h>
 #include <kernel/thread_private.h>
 #include <mm/core_mmu.h>
 #include <platform_config.h>
@@ -175,6 +176,11 @@ UNWIND(	.cantunwind)
 
 	bootargs_entry
 
+#ifdef CFG_CORE_ASLR
+	li	a0, 0
+	jal	fix_rela_dyn
+#endif
+
 	/*
 	 * Zero bss
 	 */
@@ -205,6 +211,13 @@ UNWIND(	.cantunwind)
 	jal	core_init_mmu_map
 
 	set_satp
+#ifdef CFG_CORE_ASLR
+	lla	a0, boot_mmu_config
+	LDR	a0, CORE_MMU_CONFIG_MAP_OFFSET(a0)
+	beqz	a0, 1f		/* no offset, skip dynamic relocation */
+	jal	fix_rela_dyn
+1:
+#endif
 
 	jal	boot_init_primary_early
 
@@ -276,6 +289,55 @@ LOCAL_FUNC unhandled_cpu , :
 	wfi
 	j	unhandled_cpu
 END_FUNC unhandled_cpu
+
+#if defined(CFG_CORE_ASLR)
+/*
+ * void fix_rela_dyn(unsigned long offset);
+ *
+ * This function updates dynamic relocations.
+ */
+LOCAL_FUNC fix_rela_dyn , :
+	/*
+	 * a0 holds relocate offset
+	 */
+	lla	t0, __rel_dyn_start
+	lla	t1, __rel_dyn_end
+	beq	t0, t1, 5f
+2:
+	LDR	t5, RISCV_XLEN_BYTES(t0)        /* t5 <-- relocation info:type */
+	li	t3, R_RISCV_RELATIVE
+	bne	t5, t3, 3f
+	LDR	t3, 0(t0)                       /* t3 <-- offset */
+	LDR	t5, (RISCV_XLEN_BYTES * 2)(t0)  /* t5 <-- addend */
+	add	t5, t5, a0                      /* t5 <-- location to fix up in ASLR VA */
+	STR	t5, 0(t3)                       /* update runtime address */
+	j	4f
+
+3:
+	lla	t4, __dyn_sym_start
+	srli	t6, t5, SYM_INDEX             /* t6 <--- sym table index */
+	andi	t5, t5, 0xFF                  /* t5 <--- relocation type */
+	li	t3, RELOC_TYPE
+	bne	t5, t3, 4f
+
+	/* address R_RISCV_64 or R_RISCV_32 cases */
+	LDR	t3, 0(t0)
+	li	t5, SYM_SIZE
+	mul	t6, t6, t5
+	add	t5, t4, t6
+	LDR	t6, (RISCV_XLEN_BYTES * 2)(t0)  /* t6 <-- addend */
+	LDR	t5, RISCV_XLEN_BYTES(t5)        /* t5 <-- value of symbol in symbol table */
+	add	t5, t5, t6
+	add	t5, t5, a0                      /* t5 <-- location to fix up in ALSR VA */
+	STR	t5, 0(t3)                       /* update runtime address */
+
+4:
+	addi	t0, t0, (RISCV_XLEN_BYTES * 3)
+	blt	t0, t1, 2b
+5:
+	ret
+END_FUNC fix_rela_dyn
+#endif
 
 	.section .identity_map.data
 	.balign	8
