@@ -71,25 +71,6 @@
 	sw	a0, THREAD_CORE_LOCAL_HART_ID(tp)
 .endm
 
-.macro set_satp
-	/*
-	 * a0 = hartid
-	 * a1 = address of boot_mmu_config.satp[0]
-	 * a2 = size of CSR SATP
-	 *
-	 * This hart's SATP is of value (a1 + (a0 * a2)).
-	 */
-	csrr	a0, CSR_XSCRATCH
-	la	a1, boot_mmu_config
-	addi	a1, a1, CORE_MMU_CONFIG_SATP
-	li	a2, CORE_MMU_CONFIG_SATP_SIZE
-	mul	a0, a0, a2
-	add	a1, a1, a0
-	LDR	a2, 0(a1)
-	csrw	CSR_SATP, a2
-	sfence.vma	zero, zero
-.endm
-
 .macro wait_primary
 #ifdef CFG_BOOT_SYNC_CPU
 	lla	t0, sem_cpu_sync
@@ -206,17 +187,31 @@ UNWIND(	.cantunwind)
 	jal	plat_primary_init_early
 	jal	console_init
 
+#ifdef CFG_CORE_ASLR
+	jal	get_aslr_seed
+#else
 	mv	a0, x0
-	la	a1, boot_mmu_config
+#endif
+	lla	a1, boot_mmu_config
 	jal	core_init_mmu_map
 
-	set_satp
 #ifdef CFG_CORE_ASLR
 	lla	a0, boot_mmu_config
 	LDR	a0, CORE_MMU_CONFIG_MAP_OFFSET(a0)
 	beqz	a0, 1f		/* no offset, skip dynamic relocation */
 	jal	fix_rela_dyn
 1:
+#endif
+
+	jal	enable_mmu
+
+#ifdef CFG_CORE_ASLR
+	/*
+	 * Reinitialize console, since register_serial_console() has
+	 * previously registered a PA and with ASLR the VA is different
+	 * from the PA.
+	 */
+	jal	console_init
 #endif
 
 	jal	boot_init_primary_early
@@ -268,7 +263,7 @@ UNWIND(	.cantunwind)
 	csrw	CSR_SATP, zero
 	set_sp
 	set_tp
-	set_satp
+	jal	enable_mmu
 	cpu_is_ready
 
 	jal	boot_init_secondary
@@ -338,6 +333,42 @@ LOCAL_FUNC fix_rela_dyn , :
 	ret
 END_FUNC fix_rela_dyn
 #endif
+
+/*
+ * void enable_mmu(void);
+ *
+ * This function depends on being mapped with in the identity map where
+ * physical address and virtual address is the same. After MMU has been
+ * enabled the instruction pointer will be updated to execute as the new
+ * offset instead. Stack pointers and the return address are updated.
+ */
+LOCAL_FUNC enable_mmu , : , .identity_map
+	/* Set SATP from boot_mmu_config.satp[hartid] */
+	csrr	a0, CSR_XSCRATCH
+	lla	a1, boot_mmu_config
+	LDR	a3, CORE_MMU_CONFIG_MAP_OFFSET(a1)
+	addi	a1, a1, CORE_MMU_CONFIG_SATP
+	li	a2, CORE_MMU_CONFIG_SATP_SIZE
+	mul	a0, a0, a2
+	add	a1, a1, a0
+	LDR	a2, 0(a1)
+	csrw	CSR_SATP, a2
+	sfence.vma	zero, zero
+#ifdef CFG_CORE_ASLR
+	/*
+	 * Adjust addresses in registers with offset
+	 * from boot_mmu_config.map_offset
+	 */
+	add	gp, gp, a3
+	add	tp, tp, a3
+	add	sp, sp, a3
+	add	ra, ra, a3
+#else
+	/* offset should be 0 when ASLR is disabled */
+	bnez	a3, unhandled_cpu
+#endif
+	ret
+END_FUNC enable_mmu
 
 	.section .identity_map.data
 	.balign	8
