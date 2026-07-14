@@ -82,7 +82,6 @@ int sbi_mpxy_set_shmem(unsigned long shmem_size)
 	struct sbiret sbiret = {};
 	void *shmem = NULL;
 	uint32_t exceptions = 0;
-	uint32_t hartid = 0;
 	int ret = SBI_ERR_FAILURE;
 
 	exceptions = thread_mask_exceptions(THREAD_EXCP_ALL);
@@ -109,9 +108,8 @@ int sbi_mpxy_set_shmem(unsigned long shmem_size)
 
 	mpxy->shmem_active = true;
 
-	hartid = thread_get_hartid();
 	DMSG("MPXY shmem activated for hart%d: va=%p pa=0x%" PRIx64 " sz=0x%lx",
-	     hartid, shmem, mpxy->shmem_pa, shmem_size);
+	     thread_get_hartid(), shmem, mpxy->shmem_pa, shmem_size);
 
 
 	ret = SBI_SUCCESS;
